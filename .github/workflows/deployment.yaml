@@ -29,10 +29,16 @@ jobs:
 
       - name: Build, tag and push image to AWS ECR
         id: build-image
-        env:
-          IMAGE_TAG: ${{ github.sha }}
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY}}
-          docker build -t helloworldapp:$IMAGE_TAG .
-          docker tag helloworldapp:$IMAGE_TAG ${{ secrets.AWS_ECR_REGISTRY }}/helloworldapp:$IMAGE_TAG
-          docker push ${{ secrets.AWS_ECR_REGISTRY }}/helloworldapp:$IMAGE_TAG
+          docker build -t helloworldapp:latest .
+          docker tag helloworldapp:latest ${{ secrets.AWS_ECR_REGISTRY }}/helloworldapp:latest
+          docker push ${{ secrets.AWS_ECR_REGISTRY }}/helloworldapp:latest
+
+      - name: Downlaod Task Definition
+        run: |
+          aws ecs describe-task-definition --task-definition helloworldtask \ 
+          --query taskDefinition > taskdefinition.json
+
+      - name: Print task-definition.json
+        run: cat taskdefinition.json
