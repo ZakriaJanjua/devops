@@ -23,21 +23,28 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # - name: Login to Amazon ECR
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-      # - name: Build, tag and push image to AWS ECR
-      #   id: build-image
-      #   run: |
-      #     aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY}}
-      #     docker build -t helloworldapp:latest .
-      #     docker tag helloworldapp:latest ${{ secrets.AWS_ECR_REGISTRY }}/helloworldapp:latest
-      #     docker push ${{ secrets.AWS_ECR_REGISTRY }}/helloworldapp:latest
+      - name: Build, tag and push image to AWS ECR
+        id: build-image
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY}}
+          docker build -t helloworldapp:latest .
+          docker tag helloworldapp:latest ${{ secrets.AWS_ECR_REGISTRY }}/helloworldapp:latest
+          docker push ${{ secrets.AWS_ECR_REGISTRY }}/helloworldapp:latest
+          echo "::set-output name=image::${{ secrets.AWS_ECR_REGISTRY }}/helloworldapp:latest"
 
       - name: Downlaod Task Definition
         run: |
           aws ecs describe-task-definition --task-definition helloworldtask --query taskDefinition > task-definition.json
+
+      - name: Print task-definition.json
+        run: cat task-definition.json
+
+      - name: Update Task Definition
+        run: echo "`jq '.containerDefinitions[0].image="${{ steps.build-image.image }}"' task-definition.json`" > task-definition.json
 
       - name: Print task-definition.json
         run: cat task-definition.json
